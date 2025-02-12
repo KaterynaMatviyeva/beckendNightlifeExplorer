@@ -31,7 +31,7 @@ public class EventController {
         return eventRepository.save(event);
     }
 
-    // Endpoint per modificare ed eliminare un evento (controllando che l'organizer sia il proprietario)
+
 
     // Endpoint per aggiornare un evento
     @PutMapping("/{id}")
@@ -51,7 +51,7 @@ public class EventController {
                     existingEvent.setEventDate(eventDetails.getEventDate());
                     existingEvent.setLocation(eventDetails.getLocation());
                     existingEvent.setAvailableSeats(eventDetails.getAvailableSeats());
-                    // Altri campi eventualmente...
+                    // Altri campi
                     eventRepository.save(existingEvent);
                     return ResponseEntity.ok(existingEvent);
                 })

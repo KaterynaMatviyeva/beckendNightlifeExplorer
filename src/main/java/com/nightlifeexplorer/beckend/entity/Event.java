@@ -2,6 +2,7 @@ package com.nightlifeexplorer.beckend.entity;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,18 +20,23 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, length = 255)
     private String title;
 
     @Column(length = 1000)
     private String description;
 
+    @Column(nullable = false)
     private LocalDateTime eventDate;
 
+    @Column(nullable = false, length = 255)
     private String location;
 
+    @Min(1)
+    @Column(nullable = false)
     private int availableSeats;
 
-    @ManyToOne
-    @JoinColumn(name = "organizer_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organizer_id", nullable = false)
     private User organizer;
 }
