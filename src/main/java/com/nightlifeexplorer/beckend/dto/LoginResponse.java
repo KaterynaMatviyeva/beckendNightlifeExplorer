@@ -1,10 +1,11 @@
 package com.nightlifeexplorer.beckend.dto;
 
+import com.nightlifeexplorer.beckend.enums.APIStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-@Data
-@AllArgsConstructor
-public class LoginResponse {
-    private String token;
+
+public record LoginResponse<T> (APIStatus status, T data, String error) {
+
 }
+

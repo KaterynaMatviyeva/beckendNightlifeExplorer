@@ -1,4 +1,4 @@
-package com.nightlifeexplorer.beckend.entity;
+package com.nightlifeexplorer.beckend.enums;
 
 public enum Role {
     ROLE_USER,
