@@ -26,6 +26,13 @@ public class UserService  {
     public User findByEmail(String email) throws ElementNotFoundException{
         return this.repo.findByEmail(email).orElseThrow(()-> new ElementNotFoundException(email));
     }
+    public User save(User user) {
+        return repo.save(user);
+    }
+
+    public boolean emailExists(String email) {
+        return repo.findByEmail(email).isPresent();
+    }
 
 //    private final UserRepository userRepository;
 //

@@ -17,4 +17,6 @@ public class RegisterRequest {
     @NotBlank(message = "La password è obbligatoria")
     @Size(min = 6, max = 20, message = "La password deve essere compresa tra 6 e 20 caratteri")
     private String password;
+
+    private String role;
 }
