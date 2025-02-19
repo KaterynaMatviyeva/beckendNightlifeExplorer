@@ -1,10 +1,7 @@
 package com.nightlifeexplorer.beckend.controller;
 
-import com.nightlifeexplorer.beckend.dto.LoginRequest;
-import com.nightlifeexplorer.beckend.dto.LoginResponse;
+import com.nightlifeexplorer.beckend.dto.*;
 
-import com.nightlifeexplorer.beckend.dto.RegisterRequest;
-import com.nightlifeexplorer.beckend.dto.TokenDTO;
 import com.nightlifeexplorer.beckend.entity.User;
 import com.nightlifeexplorer.beckend.enums.APIStatus;
 import com.nightlifeexplorer.beckend.enums.Role;
@@ -14,11 +11,13 @@ import com.nightlifeexplorer.beckend.exception.BadRequestException;
 import com.nightlifeexplorer.beckend.service.UserService;
 import com.nightlifeexplorer.beckend.util.JwtUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,14 +36,16 @@ public class AuthController {
     @Autowired
     JwtUtil jwt;
 
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+//    @Autowired
+//    private PasswordEncoder passwordEncoder;
 
 
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public LoginResponse<TokenDTO> register(@Valid @RequestBody RegisterRequest registerRequest, BindingResult validation) {
+    public LoginResponse<AuthResponseDTO> register(@Valid @RequestBody RegisterRequest registerRequest, BindingResult validation) {
         if (validation.hasErrors()) {
             throw new BadRequestException(
                     validation.getAllErrors()
@@ -75,17 +76,70 @@ public class AuthController {
         User newUser = new User(registerRequest.getEmail(), registerRequest.getUsername(), encodedPassword, role);
         userSvr.save(newUser);
 
-        // Genera un token JWT per il nuovo utente
-        String token = jwt.createToken(registerRequest.getEmail());
+        User savedUser = userSvr.save(newUser);
+        if (savedUser == null) {
+            throw new BadRequestException("Errore durante la registrazione dell'utente");
+        }
+        String token = jwt.createToken(newUser.getEmail());
+        UserDTO userDTO = new UserDTO(newUser.getId(), newUser.getUsername(), newUser.getEmail(), newUser.getRole());
 
-        return new LoginResponse<TokenDTO>(APIStatus.SUCCESS, new TokenDTO(token), null);
+        AuthResponseDTO data = new AuthResponseDTO(userDTO, token);
+
+        return new LoginResponse<>(
+                APIStatus.SUCCESS,
+                data,
+                null
+        );
     }
+
+
+
+
+
 
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
-    public void getMe(){
+    public LoginResponse<UserDTO> getMe(HttpServletRequest request) {
 
+        // 1. Recupera l’header "Authorization"
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            // Se non c'è l'header o non inizia con "Bearer ", l'utente non è autenticato
+            throw new BadRequestException("Missing or invalid Authorization header");
+
+        }
+
+        // 2. Estrarre il token JWT (senza la stringa "Bearer ")
+        String token = authHeader.substring(7);
+
+        // 3. Verifica se il token è valido
+        if (!jwt.validateToken(token)) {
+            throw new BadRequestException("Invalid token");
+            // O un'altra eccezione per gestire la 401
+        }
+
+        // 4. Ricava l'email dal token
+        String email = jwt.getSubjectFromToken(token);
+
+        // 5. Trova l'utente nel database usando il service
+        User found = this.userSvr.findByEmail(email);
+
+        // 6. Crea il DTO
+        UserDTO userDTO = new UserDTO(
+                found.getId(),
+                found.getEmail(),
+                found.getUsername(),
+                found.getRole()
+        );
+
+        // 7. Restituisci la risposta con i dati dell’utente
+        return new LoginResponse<>(
+                APIStatus.SUCCESS,
+                userDTO,
+                null
+        );
     }
+
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
     public LoginResponse<TokenDTO> login(@RequestBody LoginRequest credentials, BindingResult validation){
@@ -95,7 +149,13 @@ public class AuthController {
                         .map(err->err.getDefaultMessage()).toString());
         User found = this.userSvr.findByEmail(credentials.email());
         if (passwordEncoder.matches(credentials.password(), found.getPassword())) {
-                    return new LoginResponse<TokenDTO>(APIStatus.SUCCESS, new TokenDTO(jwt.createToken(credentials.email())) , null);
+            try {
+                String token = jwt.createToken(credentials.email());
+                return new LoginResponse<TokenDTO>(APIStatus.SUCCESS, new TokenDTO(token), null);
+            } catch (Exception e) {
+                throw new BadRequestException("Errore nella generazione del token JWT");
+            }
+//                    return new LoginResponse<TokenDTO>(APIStatus.SUCCESS, new TokenDTO(jwt.createToken(credentials.email())) , null);
 
                 }else throw new BadRequestException("Wrong password");
     }

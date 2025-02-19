@@ -47,7 +47,10 @@ public class SecurityConfig  {
         http.csrf(csrf -> csrf.disable());
         http.formLogin(f -> f.disable());
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
-        http.authorizeHttpRequests(req -> req.requestMatchers("/**").permitAll());
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/login", "/api/auth/register","/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/auth/**","/api/auth/me" ).permitAll()
+                .requestMatchers("/api/auth/me").authenticated()
+        );
 
 //                .authorizeHttpRequests(auth -> auth
 //                        // Consenti l'accesso a Swagger e agli endpoint di autenticazione
