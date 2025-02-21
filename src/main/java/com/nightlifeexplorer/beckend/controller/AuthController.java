@@ -21,6 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -45,7 +47,7 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public LoginResponse<AuthResponseDTO> register(@Valid @RequestBody RegisterRequest registerRequest, BindingResult validation) {
+    public LoginResponseGeneric<AuthResponseDTO> register(@Valid @RequestBody RegisterRequest registerRequest, BindingResult validation) {
         if (validation.hasErrors()) {
             throw new BadRequestException(
                     validation.getAllErrors()
@@ -81,11 +83,12 @@ public class AuthController {
             throw new BadRequestException("Errore durante la registrazione dell'utente");
         }
         String token = jwt.createToken(newUser.getEmail());
+
         UserDTO userDTO = new UserDTO(newUser.getId(), newUser.getUsername(), newUser.getEmail(), newUser.getRole());
 
         AuthResponseDTO data = new AuthResponseDTO(userDTO, token);
 
-        return new LoginResponse<>(
+        return new LoginResponseGeneric<>(
                 APIStatus.SUCCESS,
                 data,
                 null
@@ -99,7 +102,7 @@ public class AuthController {
 
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
-    public LoginResponse<UserDTO> getMe(HttpServletRequest request) {
+    public LoginResponseGeneric getMe(HttpServletRequest request) {
 
         // 1. Recupera l’header "Authorization"
         String authHeader = request.getHeader("Authorization");
@@ -131,18 +134,18 @@ public class AuthController {
                 found.getUsername(),
                 found.getRole()
         );
-
+        LoginResponseDTO loginResponse = new LoginResponseDTO(userDTO, token);
         // 7. Restituisci la risposta con i dati dell’utente
-        return new LoginResponse<>(
+        return new LoginResponseGeneric<>(
                 APIStatus.SUCCESS,
-                userDTO,
+                loginResponse,
                 null
         );
     }
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public LoginResponse<TokenDTO> login(@RequestBody LoginRequest credentials, BindingResult validation){
+    public LoginResponseGeneric login(@RequestBody LoginRequest credentials, BindingResult validation){
         if(validation.hasErrors()) throw new BadRequestException(
                 validation.getAllErrors()
                         .stream()
@@ -151,7 +154,12 @@ public class AuthController {
         if (passwordEncoder.matches(credentials.password(), found.getPassword())) {
             try {
                 String token = jwt.createToken(credentials.email());
-                return new LoginResponse<TokenDTO>(APIStatus.SUCCESS, new TokenDTO(token), null);
+
+                UserDTO userDTO = new UserDTO(found.getId(), found.getEmail(), found.getUsername(), found.getRole());
+
+                LoginResponseDTO loginResponse = new LoginResponseDTO(userDTO, token);
+
+                return new LoginResponseGeneric<>(APIStatus.SUCCESS, loginResponse, null);
             } catch (Exception e) {
                 throw new BadRequestException("Errore nella generazione del token JWT");
             }

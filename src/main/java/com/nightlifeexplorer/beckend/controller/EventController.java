@@ -1,9 +1,8 @@
 package com.nightlifeexplorer.beckend.controller;
 
-import com.nightlifeexplorer.beckend.entity.Event;
+import com.nightlifeexplorer.beckend.dto.EventDTO;
 import com.nightlifeexplorer.beckend.entity.User;
-import com.nightlifeexplorer.beckend.repository.EventRepository;
-import com.nightlifeexplorer.beckend.repository.UserRepository;
+import com.nightlifeexplorer.beckend.service.EventService;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,92 +18,55 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EventController {
 
-    private final EventRepository eventRepository;
-    private final UserRepository userRepository;
+    private final EventService eventService;
 
     // Endpoint pubblico per vedere tutti gli eventi (accessibile anche ai non autenticati)
     @GetMapping
-    public List<Event> getAllEvents() {
-        return eventRepository.findAll();
+    public ResponseEntity<List<EventDTO>> getAllEvents() {
+        List<EventDTO> events = eventService.getAllEvents();
+        return ResponseEntity.ok(events);
     }
 
     // Solo gli ORGANIZER possono creare eventi
-    @PreAuthorize("hasRole('ROLE_ORGANIZER')")
+    @PreAuthorize("hasRole('ORGANIZER')")
     @PostMapping
-    public ResponseEntity<?> createEvent(@RequestBody Event event,
+    public ResponseEntity<?> createEvent(@RequestBody EventDTO eventDTO,
                                          @AuthenticationPrincipal User organizer) {
-        event.setOrganizer(organizer);
-        Event savedEvent = eventRepository.save(event);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedEvent);
+        System.out.println("Utente autenticato: " + organizer.getEmail());
+
+        EventDTO created = eventService.createEvent(eventDTO, organizer);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     // Solo gli ORGANIZER possono aggiornare i propri eventi
-    @PreAuthorize("hasRole('ROLE_ORGANIZER')")
+    @PreAuthorize("hasRole('ORGANIZER')")
     @PutMapping("/{id}")
     public ResponseEntity<?> updateEvent(@PathVariable Long id,
-                                         @RequestBody Event eventDetails,
+                                         @RequestBody EventDTO eventDTO,
                                          @AuthenticationPrincipal User organizer) {
-        return eventRepository.findById(id)
-                .map(existingEvent -> {
-                    if (!existingEvent.getOrganizer().getId().equals(organizer.getId())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                .body("Non sei autorizzato ad aggiornare questo evento.");
-                    }
-                    existingEvent.setTitle(eventDetails.getTitle());
-                    existingEvent.setDescription(eventDetails.getDescription());
-                    existingEvent.setEventDate(eventDetails.getEventDate());
-                    existingEvent.setLocation(eventDetails.getLocation());
-                    existingEvent.setAvailableSeats(eventDetails.getAvailableSeats());
-                    eventRepository.save(existingEvent);
-                    return ResponseEntity.ok(existingEvent);
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Evento non trovato."));
+        EventDTO updated = eventService.updateEvent(id, eventDTO, organizer);
+        return ResponseEntity.ok(updated);
     }
 
     // Solo gli ORGANIZER possono eliminare i propri eventi
-    @PreAuthorize("hasRole('ROLE_ORGANIZER')")
+    @PreAuthorize("hasRole('ORGANIZER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteEvent(@PathVariable Long id,
                                          @AuthenticationPrincipal User organizer) {
-        return eventRepository.findById(id)
-                .map(existingEvent -> {
-                    if (!existingEvent.getOrganizer().getId().equals(organizer.getId())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                .body("Non sei autorizzato ad eliminare questo evento.");
-                    }
-                    eventRepository.delete(existingEvent);
-                    return ResponseEntity.ok("Evento eliminato con successo.");
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Evento non trovato."));
+        eventService.deleteEvent(id, organizer);
+        return ResponseEntity.ok("Evento eliminato con successo.");
     }
 
     // Solo gli utenti autenticati con ROLE_USER possono salvare (prenotare) eventi
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/{id}/save")
     public ResponseEntity<?> saveEvent(@PathVariable Long id,
                                        @AuthenticationPrincipal User user) {
-        return eventRepository.findById(id)
-                .map(event -> {
-                    if (!user.getSavedEvents().contains(event)) {
-                        user.getSavedEvents().add(event);
-                        userRepository.save(user);
-                        return ResponseEntity.ok("Evento salvato con successo.");
-                    } else {
-                        return ResponseEntity.badRequest().body("Hai già salvato questo evento.");
-                    }
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Evento non trovato."));
+        String message = eventService.saveEvent(id, user);
+        return ResponseEntity.ok(message);
     }
 
-    // Se l'utente non è autenticato e prova a salvare un evento, viene reindirizzato alla registrazione
-    @GetMapping("/{id}/save")
-    public ResponseEntity<?> redirectToRegister() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Devi essere registrato per salvare un evento. Vai alla pagina di registrazione.");
-    }
+
 }
 
 
