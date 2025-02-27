@@ -23,10 +23,19 @@ public class JwtUtil {
      * @param email l'indirizzo email dell'utente (usato come subject)
      * @return il token JWT generato
      */
-    public String createToken(String email) {
+//    public String createToken(String email) {
+//        return Jwts.builder()
+//                .setSubject(email)
+//                // Imposta scadenza a 60 minuti
+//                .setExpiration(new Date(System.currentTimeMillis() + (60 * 60 * 1000)))
+//                .setIssuedAt(new Date(System.currentTimeMillis()))
+//                .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
+//                .compact();
+//    }
+    public String createToken(String email, String role) {
         return Jwts.builder()
                 .setSubject(email)
-                // Imposta scadenza a 60 minuti
+                .claim("role", role)   // Aggiunge il claim "role"
                 .setExpiration(new Date(System.currentTimeMillis() + (60 * 60 * 1000)))
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()))

@@ -82,7 +82,7 @@ public class AuthController {
         if (savedUser == null) {
             throw new BadRequestException("Errore durante la registrazione dell'utente");
         }
-        String token = jwt.createToken(newUser.getEmail());
+        String token = jwt.createToken(newUser.getEmail(), newUser.getRole().name());
 
         UserDTO userDTO = new UserDTO(newUser.getId(), newUser.getUsername(), newUser.getEmail(), newUser.getRole());
 
@@ -153,7 +153,7 @@ public class AuthController {
         User found = this.userSvr.findByEmail(credentials.email());
         if (passwordEncoder.matches(credentials.password(), found.getPassword())) {
             try {
-                String token = jwt.createToken(credentials.email());
+                String token = jwt.createToken(credentials.email(), found.getRole().name());
 
                 UserDTO userDTO = new UserDTO(found.getId(), found.getEmail(), found.getUsername(), found.getRole());
 
