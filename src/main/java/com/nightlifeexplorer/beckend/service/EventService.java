@@ -10,5 +10,5 @@ public interface EventService {
     EventDTO createEvent(EventDTO eventDTO, User organizer);
     EventDTO updateEvent(Long id, EventDTO eventDTO, User organizer);
     void deleteEvent(Long id, User organizer);
-    String saveEvent(Long eventId, User user);
+//    String saveEvent(Long eventId, String user);
 }

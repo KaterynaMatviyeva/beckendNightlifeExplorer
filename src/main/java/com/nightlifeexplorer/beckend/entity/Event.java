@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,14 +28,20 @@ public class Event {
     private String description;
 
     @Column(nullable = false)
-    private LocalDateTime eventDate;
+    private LocalDate eventDate;
 
     @Column(nullable = false, length = 255)
     private String location;
 
-    @Min(1)
-    @Column(nullable = false)
-    private int availableSeats;
+    @Column(length = 500)
+    private String ticketLink;  // Facoltativo
+
+    @Column(length = 50)
+    private String category;
+
+//    @Min(1)
+//    @Column(nullable = false)
+//    private int availableSeats;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id", nullable = false)

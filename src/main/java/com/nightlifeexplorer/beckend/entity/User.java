@@ -10,10 +10,8 @@ import java.util.List;
 @Entity
 @Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = {"email"})})
 @Data
-@Getter
-@Setter
 @NoArgsConstructor
-//@AllArgsConstructor
+@AllArgsConstructor
 public class User {
 
     @Id
@@ -32,6 +30,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role; // ROLE_USER o ROLE_ORGANIZER
+
     @ManyToMany
     @JoinTable(
             name = "user_saved_events",

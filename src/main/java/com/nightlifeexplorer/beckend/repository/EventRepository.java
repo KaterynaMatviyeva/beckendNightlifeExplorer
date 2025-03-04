@@ -5,6 +5,7 @@ import com.nightlifeexplorer.beckend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,14 +19,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByLocationContainingIgnoreCase(String location);
 
     // Trova eventi dopo una certa data
-    List<Event> findByEventDateAfter(LocalDateTime date);
+    List<Event> findByEventDateAfter(LocalDate date);
 
     // Trova eventi tra due date specifiche
-    List<Event> findByEventDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+    List<Event> findByEventDateBetween(LocalDate startDate, LocalDate endDate);
 
     // Trova eventi con un titolo specifico o simile
     List<Event> findByTitleContainingIgnoreCase(String title);
 
     // Trova eventi con posti disponibili
-    List<Event> findByAvailableSeatsGreaterThan(int minSeats);
+//    List<Event> findByAvailableSeatsGreaterThan(int minSeats);
 }

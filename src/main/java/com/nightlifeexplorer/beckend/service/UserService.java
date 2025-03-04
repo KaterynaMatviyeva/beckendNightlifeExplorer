@@ -33,7 +33,12 @@ public class UserService  {
     public boolean emailExists(String email) {
         return repo.findByEmail(email).isPresent();
     }
-
+    public User findById(Long id) {
+        return repo.findById(id).orElse(null);
+    }
+    public void delete(User user) {
+        repo.delete(user);
+    }
 //    private final UserRepository userRepository;
 //
 //    @Override

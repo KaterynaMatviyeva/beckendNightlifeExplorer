@@ -168,6 +168,89 @@ public class AuthController {
                 }else throw new BadRequestException("Wrong password");
     }
 
+    // Aggiorna utente esistente
+    @PutMapping("/users/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public LoginResponseGeneric<?> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest updateUserRequest,
+            BindingResult validation
+    ) {
+        // Se ci sono errori di validazione, lanciamo eccezione
+        if (validation.hasErrors()) {
+            throw new BadRequestException(
+                    validation.getAllErrors()
+                            .stream()
+                            .map(err -> err.getDefaultMessage())
+                            .collect(Collectors.joining(", "))
+            );
+        }
+
+        // 1. Trova l'utente
+        User foundUser = userSvr.findById(id);
+        if (foundUser == null) {
+            throw new BadRequestException("Utente non trovato");
+        }
+
+        // 2. Aggiorna i campi che vuoi modificare (se non null)
+        if (updateUserRequest.getEmail() != null) {
+            foundUser.setEmail(updateUserRequest.getEmail());
+        }
+
+        if (updateUserRequest.getUsername() != null) {
+            foundUser.setUsername(updateUserRequest.getUsername());
+        }
+
+        if (updateUserRequest.getPassword() != null && !updateUserRequest.getPassword().isBlank()) {
+            // Ricordati di criptare la password
+            String encodedPassword = passwordEncoder.encode(updateUserRequest.getPassword());
+            foundUser.setPassword(encodedPassword);
+        }
+
+        if (updateUserRequest.getRole() != null && !updateUserRequest.getRole().isBlank()) {
+            try {
+                Role newRole = Role.valueOf(updateUserRequest.getRole());
+                foundUser.setRole(newRole);
+            } catch (IllegalArgumentException ex) {
+                throw new BadRequestException("Ruolo non valido");
+            }
+        }
+
+        // 3. Salva l’utente aggiornato
+        User savedUser = userSvr.save(foundUser);
+
+        // 4. Crea la risposta
+        UserDTO userDTO = new UserDTO(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
+        // Se vuoi restituire un token aggiornato, potresti rigenerarlo.
+        // Qui restituiamo solo i dati utente.
+        LoginResponseDTO responseData = new LoginResponseDTO(userDTO, null);
+
+        return new LoginResponseGeneric<>(APIStatus.SUCCESS, responseData, null);
+    }
+
+    // Elimina utente
+    @DeleteMapping("/users/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public LoginResponseGeneric<?> deleteUser(@PathVariable Long id) {
+        // 1. Trova l'utente
+        User foundUser = userSvr.findById(id);
+        if (foundUser == null) {
+            throw new BadRequestException("Utente non trovato");
+        }
+
+        // 2. Elimina l'utente
+        userSvr.delete(foundUser);
+
+        // 3. Restituisci conferma
+        return new LoginResponseGeneric<>(APIStatus.SUCCESS, "Utente eliminato con successo", null);
+    }
+
+
 
 
 }
